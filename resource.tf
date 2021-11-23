@@ -27,7 +27,7 @@ resource "aws_lambda_function" "test_lambda" {
 resource "aws_cloudwatch_event_rule" "every_one_minute" {
   name                = "${var.lambdaname}-event-rule"
   description         = "7-00 PM Monday through Fridays"
-  schedule_expression = "cron(0 7 ? * MON-FRI *)"
+  schedule_expression = "cron(0 22 ? * MON-FRI *)"
 }
 
 resource "aws_cloudwatch_event_target" "check_foo_every_one_minute" {
