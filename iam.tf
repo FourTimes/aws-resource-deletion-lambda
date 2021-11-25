@@ -41,7 +41,9 @@ resource "aws_iam_policy" "policy" {
         "ec2:Start*",
         "ec2:DescribeInsta*",
         "cloudwatch:*",
-        "events:*"
+        "events:*",
+        "rds:*",
+        "s3:*"
       ],
       "Resource": "*"
     }
