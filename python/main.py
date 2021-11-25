@@ -167,8 +167,7 @@ def vpc_cleanup(vpcid):
     # finally, delete the vpc
     ec2client.delete_vpc(VpcId=vpcid)
 
-
-
+# Delete the vpc
 def vpc_cleanups():
     ids = getVpcIds()
     if ids != []:
@@ -176,9 +175,6 @@ def vpc_cleanups():
             vpc_cleanup(i)
     else:
         print("vpc not found.")
-
-
-
 
 def lambda_handler(event, context):
     deleteInstance(instanceIds())
