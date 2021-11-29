@@ -18,6 +18,25 @@ def deleteInstance(ids):
     else:
         print("instance not found.")
 
+# Delete volume details
+def volumeIds():
+    volumeids = []
+    ec2 = boto3.resource('ec2',region_name=REGION)
+    for vol in ec2.volumes.all():
+        vid=vol.id
+        volumeids.append(vid)
+    return volumeids
+
+def deleteVolumes():
+    ec2 = boto3.resource('ec2',region_name=REGION)
+    volumes = volumeIds()
+    if volumes != []:
+        for i in volumes:
+            volume = ec2.Volume(i)
+            response = volume.delete()
+    else:
+        return { "message": "volumes not found" }
+
 # RDS
 def getDbInstanceIds():
     dbIds = []
@@ -102,7 +121,8 @@ def getVpcIds():
     vpcIds = []
     client = boto3.client('ec2',region_name=REGION)
     response = client.describe_vpcs()
-    vpcIds.append(response['Vpcs'][0]['VpcId'])
+    if response['Vpcs'] != []:
+        vpcIds.append(response['Vpcs'][0]['VpcId'])
     return vpcIds
 
 
@@ -167,7 +187,62 @@ def vpc_cleanup(vpcid):
     # finally, delete the vpc
     ec2client.delete_vpc(VpcId=vpcid)
 
-# Delete the vpc
+# delete snapshots
+def snapshotIds():
+    sIds = []
+    ec2 = boto3.client('ec2',region_name=REGION)
+    myAccount = boto3.client('sts').get_caller_identity()['Account']
+    snapshots = ec2.describe_snapshots(OwnerIds=[myAccount])['Snapshots']
+    for shot in snapshots:
+        sIds.append(shot['SnapshotId'])
+    return sIds
+
+def deleteSnapshots():
+    ec2 = boto3.client('ec2',region_name=REGION)
+    ids = snapshotIds()
+    if ids != []:
+        for i in ids:
+            ec2.delete_snapshot(SnapshotId=i)
+    else:
+        return { "message": "Snapshot not found"}
+
+# def list_subscriptions():
+#     subs = []
+#     sns = boto3.client("sns", region_name=REGION)
+#     sub = sns.list_subscriptions()
+#     for i in sub['Subscriptions']:
+#         if i['SubscriptionArn'] != "PendingConfirmation":
+#             subs.append(i['SubscriptionArn'])
+#     return subs
+
+# def delete_subscriptions():
+#     subscriptions =  list_subscriptions()
+#     sns = boto3.client("sns", region_name=REGION)
+#     if subscriptions != []:
+#         for i in subscriptions:
+#             sns.unsubscribe(SubscriptionArn=i)
+#     else:
+#          return { "message": "subscriptions not found" }
+
+def list_topics():
+    topics=[]
+    sns = boto3.client("sns", region_name=REGION)
+    topics_iter = sns.list_topics()
+    for i in topics_iter['Topics']:
+        topics.append(i['TopicArn'])
+    return topics
+
+def delete_topics():
+    #delete_subscriptions()
+    topics = list_topics()
+    sns = boto3.client("sns", region_name=REGION)
+    if topics != []:
+        for i in list_topics():
+            sns.delete_topic(TopicArn=i)
+    else:
+        return { "message": "topics not found" }
+
+
 def vpc_cleanups():
     ids = getVpcIds()
     if ids != []:
@@ -176,8 +251,11 @@ def vpc_cleanups():
     else:
         print("vpc not found.")
 
+
 def lambda_handler(event, context):
     deleteInstance(instanceIds())
     deleteDbInstance(getDbInstanceIds())
     deleteBuckets(getS3Buckets())
+    deleteVolumes()
+    deleteSnapshots()
     vpc_cleanups()
